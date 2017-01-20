@@ -47,6 +47,9 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         supportingFiles.add(new SupportingFile("project/plugins.sbt", "project", "plugins.sbt"));
         supportingFiles.add(new SupportingFile("project/eclipse.sbt", "project", "eclipse.sbt"));
         supportingFiles.add(new SupportingFile("sbt", "", "sbt"));
+        supportingFiles.add(new SupportingFile("conf/routes", "conf", "routes"));
+        supportingFiles.add(new SupportingFile("conf/application.conf", "conf", "application.conf"));
+        supportingFiles.add(new SupportingFile("conf/swagger.routes.mustache", "conf", "swagger.routes"));
         
         apiTemplateFiles.put("api.mustache", "Controller.java");
         // Will use swagger UI for docs in place of Markdown
@@ -118,6 +121,53 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         }
 
         return objs;
+    }
+    
+    @Override
+    public Map<String, Object> postProcessOperations(Map<String, Object> objs) {
+    	
+    	Map<String, Object> operations = (Map<String, Object>) objs.get("operations");
+        if (operations != null) {
+            List<CodegenOperation> ops = (List<CodegenOperation>) operations.get("operation");
+            for (CodegenOperation operation : ops) {
+                List<CodegenResponse> responses = operation.responses;
+                if (responses != null) {
+                    for (CodegenResponse resp : responses) {
+                        if ("0".equals(resp.code)) {
+                            resp.code = "200";
+                        }
+                    }
+                }
+
+                if (operation.returnType == null) {
+                    operation.returnType = "Void";
+                } else if (operation.returnType.startsWith("List")) {
+                    String rt = operation.returnType;
+                    int end = rt.lastIndexOf(">");
+                    if (end > 0) {
+                        operation.returnType = rt.substring("List<".length(), end).trim();
+                        operation.returnContainer = "List";
+                    }
+                } else if (operation.returnType.startsWith("Map")) {
+                    String rt = operation.returnType;
+                    int end = rt.lastIndexOf(">");
+                    if (end > 0) {
+                        operation.returnType = rt.substring("Map<".length(), end).split(",")[1].trim();
+                        operation.returnContainer = "Map";
+                    }
+                } else if (operation.returnType.startsWith("Set")) {
+                    String rt = operation.returnType;
+                    int end = rt.lastIndexOf(">");
+                    if (end > 0) {
+                        operation.returnType = rt.substring("Set<".length(), end).trim();
+                        operation.returnContainer = "Set";
+                    }
+                }
+            }
+        }
+    	
+    	
+    	return objs;
     }
 
 }

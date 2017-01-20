@@ -1,17 +1,13 @@
 package {{package}};
 
-{{^jdk8}}
+
 {{#imports}}import {{import}};
 {{/imports}}
-
 import io.swagger.annotations.*;
 import play.mvc.*;
-{{/jdk8}}
-
-{{#async}}
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-{{/async}}
 
 {{>generatedAnnotation}}
 @Api(value = "{{{baseName}}}")
@@ -20,7 +16,7 @@ public class {{classname}}Controller extends Controller {
 {{^jdk8}}
 {{#operation}}
      @ApiOperation(value = "{{{summary}}}", notes = "{{{notes}}}",
-     	httpMethod = {{httpMethod}}, 
+     	httpMethod = "{{httpMethod}}", 
      	response = {{{returnType}}}.class{{#returnContainer}}, responseContainer = "{{{returnContainer}}}"{{/returnContainer}}{{#hasAuthMethods}}, authorizations = {
         {{#authMethods}}@Authorization(value = "{{name}}"{{#isOAuth}}, scopes = {
             {{#scopes}}@AuthorizationScope(scope = "{{scope}}", description = "{{description}}"){{#hasMore}},
@@ -30,8 +26,8 @@ public class {{classname}}Controller extends Controller {
     }{{/hasAuthMethods}}, tags={ {{#vendorExtensions.x-tags}}"{{tag}}",{{/vendorExtensions.x-tags}} })
     @ApiResponses(value = { {{#responses}}
         @ApiResponse(code = {{{code}}}, message = "{{{message}}}", response = {{{returnType}}}.class){{#hasMore}},{{/hasMore}}{{/responses}} })
-    public CompletionStage<Result> {{operationId}}({{#allParams}}{{>queryParams}}{{>pathParams}}{{>headerParams}}{{>bodyParams}}{{>formParams}}{{#hasMore}},
-        {{/hasMore}}{{/allParams}}) {
+    public CompletionStage<Result> {{operationId}}({{#allParams}}{{{dataType}}} {{paramName}}{{#hasMore}},
+    {{/hasMore}}{{/allParams}}) {
 		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		future.complete("dummy");

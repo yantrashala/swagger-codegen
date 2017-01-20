@@ -1,0 +1,46 @@
+package {{package}};
+
+{{^jdk8}}
+{{#imports}}import {{import}};
+{{/imports}}
+
+import io.swagger.annotations.*;
+import play.mvc.*;
+{{/jdk8}}
+
+{{#async}}
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+{{/async}}
+
+{{>generatedAnnotation}}
+@Api(value = "{{{baseName}}}")
+{{#operations}}
+public class {{classname}}Controller extends Controller {
+{{^jdk8}}
+{{#operation}}
+     @ApiOperation(value = "{{{summary}}}", notes = "{{{notes}}}",
+     	httpMethod = {{httpMethod}}, 
+     	response = {{{returnType}}}.class{{#returnContainer}}, responseContainer = "{{{returnContainer}}}"{{/returnContainer}}{{#hasAuthMethods}}, authorizations = {
+        {{#authMethods}}@Authorization(value = "{{name}}"{{#isOAuth}}, scopes = {
+            {{#scopes}}@AuthorizationScope(scope = "{{scope}}", description = "{{description}}"){{#hasMore}},
+            {{/hasMore}}{{/scopes}}
+            }{{/isOAuth}}){{#hasMore}},
+        {{/hasMore}}{{/authMethods}}
+    }{{/hasAuthMethods}}, tags={ {{#vendorExtensions.x-tags}}"{{tag}}",{{/vendorExtensions.x-tags}} })
+    @ApiResponses(value = { {{#responses}}
+        @ApiResponse(code = {{{code}}}, message = "{{{message}}}", response = {{{returnType}}}.class){{#hasMore}},{{/hasMore}}{{/responses}} })
+    public CompletionStage<Result> {{operationId}}({{#allParams}}{{>queryParams}}{{>pathParams}}{{>headerParams}}{{>bodyParams}}{{>formParams}}{{#hasMore}},
+        {{/hasMore}}{{/allParams}}) {
+		
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		future.complete("dummy");
+		
+	    return future.thenApply(Results::ok);
+	    
+	}	    
+        
+{{/operation}}
+{{/jdk8}}
+}
+{{/operations}}

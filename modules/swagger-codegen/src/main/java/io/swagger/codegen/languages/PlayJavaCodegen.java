@@ -1,11 +1,17 @@
 package io.swagger.codegen.languages;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.swagger.codegen.*;
+import io.swagger.models.Model;
+import io.swagger.models.Operation;
+import io.swagger.models.Swagger;
+import io.swagger.models.parameters.Parameter;
+import io.swagger.util.Json;
 
 public class PlayJavaCodegen extends AbstractJavaCodegen {
 	
@@ -49,7 +55,7 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         supportingFiles.add(new SupportingFile("sbt", "", "sbt"));
         supportingFiles.add(new SupportingFile("conf/routes", "conf", "routes"));
         supportingFiles.add(new SupportingFile("conf/application.conf", "conf", "application.conf"));
-        supportingFiles.add(new SupportingFile("conf/swagger.routes.mustache", "conf", "swagger.routes"));
+        supportingFiles.add(new SupportingFile("swagger.routes.mustache", "conf", "swagger.routes"));
         
         apiTemplateFiles.put("api.mustache", "Controller.java");
         // Will use swagger UI for docs in place of Markdown
@@ -101,7 +107,8 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         }
     }
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public Map<String, Object> postProcessModelsEnum(Map<String, Object> objs) {
         objs = super.postProcessModelsEnum(objs);
 
@@ -123,7 +130,8 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         return objs;
     }
     
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public Map<String, Object> postProcessOperations(Map<String, Object> objs) {
     	
     	Map<String, Object> operations = (Map<String, Object>) objs.get("operations");
@@ -169,5 +177,87 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
     	
     	return objs;
     }
+    
+//    @Override
+//    public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Model> definitions, Swagger swagger) {
+//        CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, swagger);
+//        op.path = processPathParams(op.path);
+//        return op;
+//    }
+    
+    private String processPathParams(String p) {
+    	return p.replaceAll("\\{(.*?)\\}", ":$1");
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, Object> postProcessSupportingFileData(Map<String, Object> bundle) {
+    	
+    	Map<String, Object> apiInfo = (HashMap<String, Object>)bundle.get("apiInfo");
+		List<Object> allOperations = (List<Object>)apiInfo.get("apis");
+    	
+    	bundle.put("routeInfo",processRouteList(allOperations));
+    	Json.prettyPrint(bundle);
+    	return bundle;
+    }
+    
+	@SuppressWarnings("unchecked")
+    private List<HashMap<String, Object>> processRouteList(List<Object> allOperations){
+    	
+		List<HashMap<String, Object>> routes = new ArrayList<HashMap<String,Object>>();
+		
+    	for (int i = 0; i < allOperations.size(); i++) {
+            Map<String, Object> operations = (Map<String, Object>) allOperations.get(i);
+            HashMap<String, Object> operation = (HashMap<String, Object>) operations.get("operations");
+            
+            List<CodegenOperation> ops = (List<CodegenOperation>)operation.get("operation");
+            
+            for (CodegenOperation op : ops) {
+            	HashMap<String,Object> route = new HashMap<String,Object>();
+            	route.put("httpMethod", op.httpMethod);
+            	route.put("path", processPathParams(op.path));
+            	route.put("package",operations.get("package"));
+            	route.put("classname",operation.get("classname"));
+            	route.put("operationId",op.operationId);
+            	route.put("allParams",processRouteParams(op.allParams));
+            	
+            	routes.add(route);
+            }
+        }
+    	
+    	return routes;
+    }
+    
+	private List<HashMap<String, Object>> processRouteParams(List<CodegenParameter> allParams) {
+		List<HashMap<String, Object>> allRouteParams = new ArrayList<HashMap<String,Object>>();
+		
+		for (CodegenParameter param : allParams) {
+			
+			if((param.isPathParam != null && param.isPathParam) || 
+					(param.isQueryParam != null && param.isQueryParam)) {
+				HashMap<String,Object> routeParam = new HashMap<String,Object>();
+				
+				routeParam.put("isPathParam", param.isPathParam);
+				routeParam.put("isQueryParam", param.isQueryParam);
+				routeParam.put("dataType", param.dataType.indexOf("List")>=0?"java.util."+param.dataType.replaceAll("\\<(.*?)\\>", "[$1]"):param.dataType);
+				routeParam.put("paramName", param.paramName);
+				
+				allRouteParams.add(routeParam);
+			}
+        }
+		
+	
+		for (int i = 0; i < allRouteParams.size(); i++) {
+            if (i > 0) {
+            	allRouteParams.get(i).put("secondaryParam",true);
+            }
+            if (i < allRouteParams.size() - 1) {
+            	allRouteParams.get(i).put("hasMore",true);
+            }
+        }
+        
+		
+		return allRouteParams;
+	}
 
 }

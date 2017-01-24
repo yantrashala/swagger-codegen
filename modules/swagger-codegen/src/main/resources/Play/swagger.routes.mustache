@@ -1,3 +1,7 @@
+{{#apiInfo.apis}}
+{{#operations}}
 {{#routeInfo}}
 {{httpMethod}}				{{path}}				{{package}}.{{classname}}Controller.{{operationId}}({{#allParams}}{{>pathParams}}{{>queryParams}}{{#hasMore}},{{/hasMore}}{{/allParams}})		
 {{/routeInfo}}
+{{/operations}}
+{{/apiInfo.apis}}

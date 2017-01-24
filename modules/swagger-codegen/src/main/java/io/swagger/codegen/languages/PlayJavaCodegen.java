@@ -57,7 +57,8 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
         supportingFiles.add(new SupportingFile("conf/application.conf", "conf", "application.conf"));
         supportingFiles.add(new SupportingFile("swagger.routes.mustache", "conf", "swagger.routes"));
         
-        apiTemplateFiles.put("api.mustache", "Controller.java");
+        apiTemplateFiles.put("api.mustache", ".java");
+        apiTemplateFiles.put("apiController.mustache", "Controller.java");
         // Will use swagger UI for docs in place of Markdown
         modelDocTemplateFiles.remove("model_doc.mustache");
         apiDocTemplateFiles.remove("api_doc.mustache");
@@ -173,10 +174,36 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
                 }
             }
         }
-    	
+        
+        objs.put("routeInfo", processRoutes(objs));
+        
+        Json.prettyPrint(objs.get("routeInfo"));
     	
     	return objs;
     }
+    
+    private List<HashMap<String, Object>> processRoutes(Map<String, Object> operations){
+    	
+    	 HashMap<String, Object> operation = (HashMap<String, Object>) operations.get("operations");
+         
+    	 List<HashMap<String, Object>> routes = new ArrayList<HashMap<String,Object>>();
+         List<CodegenOperation> ops = (List<CodegenOperation>)operation.get("operation");
+         
+         for (CodegenOperation op : ops) {
+         	HashMap<String,Object> route = new HashMap<String,Object>();
+         	route.put("httpMethod", op.httpMethod);
+         	route.put("path", processPathParams(op.path));
+         	route.put("package",operations.get("package"));
+         	route.put("classname",operation.get("classname"));
+         	route.put("operationId",op.operationId);
+         	route.put("allParams",processRouteParams(op.allParams));
+         	
+         	routes.add(route);
+         }
+    	
+    	return routes;
+    }
+    
     
 //    @Override
 //    public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Model> definitions, Swagger swagger) {
@@ -189,44 +216,44 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
     	return p.replaceAll("\\{(.*?)\\}", ":$1");
     }
     
-    @SuppressWarnings("unchecked")
-    @Override
-    public Map<String, Object> postProcessSupportingFileData(Map<String, Object> bundle) {
-    	
-    	Map<String, Object> apiInfo = (HashMap<String, Object>)bundle.get("apiInfo");
-		List<Object> allOperations = (List<Object>)apiInfo.get("apis");
-    	
-    	bundle.put("routeInfo",processRouteList(allOperations));
-    	Json.prettyPrint(bundle);
-    	return bundle;
-    }
-    
-	@SuppressWarnings("unchecked")
-    private List<HashMap<String, Object>> processRouteList(List<Object> allOperations){
-    	
-		List<HashMap<String, Object>> routes = new ArrayList<HashMap<String,Object>>();
-		
-    	for (int i = 0; i < allOperations.size(); i++) {
-            Map<String, Object> operations = (Map<String, Object>) allOperations.get(i);
-            HashMap<String, Object> operation = (HashMap<String, Object>) operations.get("operations");
-            
-            List<CodegenOperation> ops = (List<CodegenOperation>)operation.get("operation");
-            
-            for (CodegenOperation op : ops) {
-            	HashMap<String,Object> route = new HashMap<String,Object>();
-            	route.put("httpMethod", op.httpMethod);
-            	route.put("path", processPathParams(op.path));
-            	route.put("package",operations.get("package"));
-            	route.put("classname",operation.get("classname"));
-            	route.put("operationId",op.operationId);
-            	route.put("allParams",processRouteParams(op.allParams));
-            	
-            	routes.add(route);
-            }
-        }
-    	
-    	return routes;
-    }
+//    @SuppressWarnings("unchecked")
+//    @Override
+//    public Map<String, Object> postProcessSupportingFileData(Map<String, Object> bundle) {
+//    	
+//    	Map<String, Object> apiInfo = (HashMap<String, Object>)bundle.get("apiInfo");
+//		List<Object> allOperations = (List<Object>)apiInfo.get("apis");
+//    	
+//    	bundle.put("routeInfo",processRouteList(allOperations));
+//    	Json.prettyPrint(bundle);
+//    	return bundle;
+//    }
+//    
+//	@SuppressWarnings("unchecked")
+//    private List<HashMap<String, Object>> processRouteList(List<Object> allOperations){
+//    	
+//		List<HashMap<String, Object>> routes = new ArrayList<HashMap<String,Object>>();
+//		
+//    	for (int i = 0; i < allOperations.size(); i++) {
+//            Map<String, Object> operations = (Map<String, Object>) allOperations.get(i);
+//            HashMap<String, Object> operation = (HashMap<String, Object>) operations.get("operations");
+//            
+//            List<CodegenOperation> ops = (List<CodegenOperation>)operation.get("operation");
+//            
+//            for (CodegenOperation op : ops) {
+//            	HashMap<String,Object> route = new HashMap<String,Object>();
+//            	route.put("httpMethod", op.httpMethod);
+//            	route.put("path", processPathParams(op.path));
+//            	route.put("package",operations.get("package"));
+//            	route.put("classname",operation.get("classname"));
+//            	route.put("operationId",op.operationId);
+//            	route.put("allParams",processRouteParams(op.allParams));
+//            	
+//            	routes.add(route);
+//            }
+//        }
+//    	
+//    	return routes;
+//    }
     
 	private List<HashMap<String, Object>> processRouteParams(List<CodegenParameter> allParams) {
 		List<HashMap<String, Object>> allRouteParams = new ArrayList<HashMap<String,Object>>();
@@ -253,6 +280,8 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
             }
             if (i < allRouteParams.size() - 1) {
             	allRouteParams.get(i).put("hasMore",true);
+            } else {
+            	allRouteParams.get(i).put("hasMore",false);
             }
         }
         

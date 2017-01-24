@@ -197,7 +197,14 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
          	route.put("classname",operation.get("classname"));
          	route.put("operationId",op.operationId);
          	route.put("allParams",processRouteParams(op.allParams));
-         	
+         	route.put("summary", op.summary);
+         	route.put("notes", op.notes);
+         	route.put("returnType", op.returnType);
+         	route.put("returnContainer", op.returnContainer);
+         	route.put("hasAuthMethods", op.hasAuthMethods);
+         	route.put("responses", op.responses);
+         	route.put("operationId", op.operationId);
+         	route.put("authMethods", op.authMethods);
          	routes.add(route);
          }
     	
@@ -266,7 +273,7 @@ public class PlayJavaCodegen extends AbstractJavaCodegen {
 				
 				routeParam.put("isPathParam", param.isPathParam);
 				routeParam.put("isQueryParam", param.isQueryParam);
-				routeParam.put("dataType", param.dataType.indexOf("List")>=0?"java.util."+param.dataType.replaceAll("\\<(.*?)\\>", "[$1]"):param.dataType);
+				routeParam.put("dataType", param.dataType.indexOf("List")>=0?"java.util."+param.dataType.replaceAll("\\<(.*?)\\>", "<$1>"):param.dataType);
 				routeParam.put("paramName", param.paramName);
 				
 				allRouteParams.add(routeParam);
